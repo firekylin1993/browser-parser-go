@@ -1,9 +1,13 @@
 package useragent
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 type Operator string
 
+// UserAgent ua对象
 type UserAgent struct {
 	ua      []byte
 	regexs  regexM
@@ -23,16 +27,18 @@ type expectParam struct {
 	expect bool
 }
 
+// Init 绑定正则
 func Init() {
 	gbRegex = map[BrowserType]*regexExpect{
 		IsMobile: registeRegexp(
 			And,
-			expectParam{
-				regex:  regexp.MustCompile("Mozilla.*Mobile|Windows.*Phone|iPhone|Android.*Mobile|BlackBerry.*Mobile|MeeGo|SymbianOS|Opera.*Mini|Chrome.*Mobile|UCBrowser.*Mobile"),
-				expect: true,
-			},
+			expectParam{regex: regexp.MustCompile(strings.Join(mobileType, "|")), expect: true},
 		),
-		IsBuiltIn: registeRegexp(And, expectParam{regex: regexp.MustCompile("MicroMessenger"), expect: true}),
+		IsBuiltIn: registeRegexp(
+			And,
+			expectParam{regex: regexp.MustCompile("MicroMessenger"), expect: true},
+			expectParam{regex: regexp.MustCompile("wxwork"), expect: true},
+		),
 		IsFireFox: registeRegexp(And, expectParam{regex: regexp.MustCompile("Firefox"), expect: true}),
 		IsOpera: registeRegexp(
 			Or,
@@ -74,6 +80,10 @@ func Init() {
 			expectParam{regex: regexp.MustCompile("Edge"), expect: false},
 			expectParam{regex: regexp.MustCompile("Edg"), expect: false},
 			expectParam{regex: regexp.MustCompile("Baidu"), expect: false},
+			expectParam{regex: regexp.MustCompile("DingTalk"), expect: false},
+			expectParam{regex: regexp.MustCompile("Feishu"), expect: false},
+			expectParam{regex: regexp.MustCompile("MicroMessenger"), expect: false},
+			expectParam{regex: regexp.MustCompile("wxwork"), expect: false},
 		),
 		//ie浏览器。搜狗使用ie内核
 		IsIE: registeRegexp(
@@ -82,6 +92,14 @@ func Init() {
 			expectParam{regex: regexp.MustCompile("SE"), expect: false},
 			expectParam{regex: regexp.MustCompile("MetaSr"), expect: false},
 		),
+		//微信浏览器
+		IsWx: registeRegexp(
+			And,
+			expectParam{regex: regexp.MustCompile("MicroMessenger"), expect: true},
+			expectParam{regex: regexp.MustCompile("wxwork"), expect: false},
+		),
+		IsDingDing: registeRegexp(And, expectParam{regex: regexp.MustCompile("DingTalk"), expect: true}),
+		IsFeiShu:   registeRegexp(And, expectParam{regex: regexp.MustCompile("Feishu"), expect: true}),
 	}
 }
 
@@ -94,6 +112,7 @@ func registeRegexp(operator Operator, rgxs ...expectParam) *regexExpect {
 	return re
 }
 
+// NewUserAgent 初始化ua对象
 func NewUserAgent(ua string) *UserAgent {
 	return &UserAgent{
 		ua:     []byte(ua),
@@ -101,6 +120,7 @@ func NewUserAgent(ua string) *UserAgent {
 	}
 }
 
+// Browser 判断ua类型
 func (p *UserAgent) Browser(b BrowserType) bool {
 	var ret bool
 	if p.regexs[b].Oper == And {
